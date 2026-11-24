@@ -69,8 +69,9 @@ export default function App({ api }) {
     let alive = true;
     sessionInfo(api).then((session) => {
       if (!alive) return;
-      setDatabase(String(session.database || ""));
-      if (!session.database) setLoadError("La sesión activa no incluye la base de datos.");
+      const activeDatabase = String(session?.database || "");
+      setDatabase(activeDatabase);
+      if (!activeDatabase) setLoadError("La sesión activa no incluye la base de datos.");
     }).catch((error) => alive && setLoadError(error.message));
     return () => { alive = false; };
   }, [api]);
@@ -291,13 +292,13 @@ export default function App({ api }) {
   return (
     <main className="vr-shell">
       <header className="vr-header">
-        <div className="vr-brand-mark" aria-hidden="true">V</div>
+        <div className="vr-brand-mark" aria-hidden="true">▶</div>
         <div className="vr-heading">
-          <div className="vr-eyebrow">VTC PLUS · MYGEOTAB</div>
+          <div className="vr-eyebrow">MYGEOTAB · GESTIÓN DE VÍDEO</div>
           <h1>Solicitud de vídeo</h1>
           <p>Solicita grabaciones directamente a la cámara y consúltalas después en MyGeotab.</p>
         </div>
-        <div className="vr-session"><span className="vr-dot" />Conectado<span className="vr-database">{database || "Cargando base…"}</span></div>
+        <div className={`vr-session ${database ? "is-connected" : "is-connecting"}`}><span className="vr-dot" />{database ? "Conectado" : "Conectando…"}<span className="vr-database">{database || "Cargando base…"}</span></div>
       </header>
 
       {notice.text && <div className={`vr-notice vr-notice--${notice.type}`} role={notice.type === "error" ? "alert" : "status"}>{notice.text}</div>}
