@@ -130,6 +130,7 @@ export function makeClips(startValue, endValue, timeZone, cameraSerial, database
     const duration = Math.min(120, totalSeconds - offset);
     const fromDate = startUtc.plus({ seconds: offset }).toISO({ suppressMilliseconds: true });
     clips.push({
+      cameraSerial,
       cameraSerialNumber: cameraSerial,
       fromDate,
       durationSeconds: duration,

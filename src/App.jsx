@@ -11,7 +11,10 @@ const DONE = new Set(["COMPLETED", "FAIL", "EXPIRED", "REJECTED", "ERROR"]);
 function readHistory(key) {
   try {
     const rows = JSON.parse(localStorage.getItem(key) || "[]");
-    return Array.isArray(rows) ? rows : [];
+    return Array.isArray(rows) ? rows.map((row) => ({
+      ...row,
+      cameraSerial: String(row?.cameraSerial || row?.cameraSerialNumber || row?.camera?.cameraSerialNumber || ""),
+    })) : [];
   } catch {
     return [];
   }
