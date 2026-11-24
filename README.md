@@ -6,6 +6,7 @@ Add-In de página completa para pedir clips de vídeo desde la base de datos abi
 
 - Busca cámaras por matrícula, nombre del activo o serie de cámara.
 - Usa la zona horaria del activo y convierte el intervalo local a UTC.
+- Limita cada intervalo solicitado a 20 minutos y muestra avisos antes de enviarlo.
 - Divide intervalos en clips de hasta 120 segundos.
 - Envía tandas de hasta 16 solicitudes pendientes por cámara y consulta los estados de MyGeotab.
 - Guarda solicitudes e historial en `localStorage`, separado por base de datos, para reanudar en el mismo navegador.

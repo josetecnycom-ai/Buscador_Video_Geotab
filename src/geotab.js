@@ -115,11 +115,18 @@ export function localInputToUtc(value, timeZone) {
   return parsed.toUTC().toISO({ suppressMilliseconds: true });
 }
 
+export function rangeDurationSeconds(startValue, endValue, timeZone) {
+  const startUtc = DateTime.fromISO(localInputToUtc(startValue, timeZone), { setZone: true });
+  const endUtc = DateTime.fromISO(localInputToUtc(endValue, timeZone), { setZone: true });
+  const seconds = Math.floor(endUtc.diff(startUtc, "seconds").seconds);
+  if (seconds <= 0) throw new Error("La hora final debe ser posterior a la inicial.");
+  return seconds;
+}
+
 export function makeClips(startValue, endValue, timeZone, cameraSerial, database) {
   const startUtc = DateTime.fromISO(localInputToUtc(startValue, timeZone), { setZone: true });
   const endUtc = DateTime.fromISO(localInputToUtc(endValue, timeZone), { setZone: true });
-  const totalSeconds = Math.floor(endUtc.diff(startUtc, "seconds").seconds);
-  if (totalSeconds <= 0) throw new Error("La hora final debe ser posterior a la inicial.");
+  const totalSeconds = rangeDurationSeconds(startValue, endValue, timeZone);
   const clips = [];
   for (let offset = 0, index = 1; offset < totalSeconds; offset += 120, index += 1) {
     const duration = Math.min(120, totalSeconds - offset);

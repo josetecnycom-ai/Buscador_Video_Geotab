@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, ButtonType } from "@geotab/zenith";
-import { call, extractCapture, extractStatus, listCameras, makeClips, sessionInfo } from "./geotab.js";
+import { call, extractCapture, extractStatus, listCameras, makeClips, rangeDurationSeconds, sessionInfo } from "./geotab.js";
 
 const STORAGE_PREFIX = "vtcplus-video-requests-v1";
 const MAX_PENDING = 16;
+const MAX_RANGE_SECONDS = 20 * 60;
 const ACTIVE = new Set(["PLANNED", "QUEUED", "SENT", "ONGOING", "DUPLICATE"]);
 const DONE = new Set(["COMPLETED", "FAIL", "EXPIRED", "REJECTED", "ERROR"]);
 
@@ -33,6 +34,7 @@ export default function App({ api }) {
   const [working, setWorking] = useState(false);
   const [notice, setNotice] = useState({ text: "", type: "" });
   const [loadError, setLoadError] = useState("");
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
   const refreshBusy = useRef(false);
   const workerBusy = useRef(false);
 
@@ -271,6 +273,14 @@ export default function App({ api }) {
       setNotice({ type: "error", text: "Selecciona una cámara e indica el intervalo completo." });
       return;
     }
+    if (rangeValidation.seconds > MAX_RANGE_SECONDS) {
+      setLimitDialogOpen(true);
+      return;
+    }
+    if (rangeValidation.error) {
+      setNotice({ type: "error", text: rangeValidation.error });
+      return;
+    }
     try {
       const clips = makeClips(start, end, camera.timeZone, camera.cameraSerial, database);
       const exists = clips.some((clip) => history.some((row) => row.key === clip.key));
@@ -288,6 +298,17 @@ export default function App({ api }) {
   };
 
   const activeCount = history.filter((row) => row.cameraSerial === camera?.cameraSerial && ACTIVE.has(row.status)).length;
+  const rangeValidation = useMemo(() => {
+    if (!camera || !start || !end) return { seconds: null, error: "" };
+    try {
+      const seconds = rangeDurationSeconds(start, end, camera.timeZone);
+      return seconds > MAX_RANGE_SECONDS
+        ? { seconds, error: "El intervalo supera el máximo permitido de 20 minutos. Reduce la hora de inicio o fin para continuar." }
+        : { seconds, error: "" };
+    } catch (error) {
+      return { seconds: null, error: error.message || "Revisa las fechas y horas seleccionadas." };
+    }
+  }, [camera, start, end]);
 
   return (
     <main className="vr-shell">
@@ -330,9 +351,10 @@ export default function App({ api }) {
             <div><label className="vr-label" htmlFor="range-start">Desde</label><input id="range-start" type="datetime-local" className="vr-input" value={start} onChange={(event) => setStart(event.target.value)} /></div>
             <div><label className="vr-label" htmlFor="range-end">Hasta</label><input id="range-end" type="datetime-local" className="vr-input" value={end} onChange={(event) => setEnd(event.target.value)} /></div>
           </div>
-          <div className="vr-info-strip"><span aria-hidden="true">ⓘ</span><span>Se solicitará vídeo en clips de hasta 2 minutos. La cámara entregará las vistas y el audio que tenga habilitados.</span></div>
+          {rangeValidation.error && start && end && <div className="vr-range-warning" role="alert">{rangeValidation.error}</div>}
+          <div className="vr-info-strip"><span aria-hidden="true">ⓘ</span><span>Máximo 20 minutos por solicitud. El vídeo se divide en clips de hasta 2 minutos; la cámara entrega las vistas y el audio que tenga habilitados.</span></div>
           <div className="vr-form-actions">
-            <ButtonView type="primary" onClick={startNewRequest} disabled={!camera || !start || !end || working || !camera.timeZone}>Solicitar capturas</ButtonView>
+            <ButtonView type="primary" onClick={startNewRequest} disabled={!camera || !start || !end || working || !camera.timeZone || Boolean(rangeValidation.error && rangeValidation.seconds <= MAX_RANGE_SECONDS)}>Solicitar capturas</ButtonView>
             {activeCount > 0 && <ButtonView onClick={resumePending} disabled={working}>Reanudar {activeCount} pendientes</ButtonView>}
             {working && <span className="vr-working"><span className="vr-spinner" />Procesando solicitudes</span>}
           </div>
@@ -364,6 +386,7 @@ export default function App({ api }) {
           <div className="vr-footnote">No se descargan archivos. Para visualizar las grabaciones, abre la sección de vídeo de MyGeotab cuando la captura figure como completada.</div>
         </aside>
       </div>
+      {limitDialogOpen && <div className="vr-modal-backdrop"><section className="vr-limit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="vr-limit-title" aria-describedby="vr-limit-description"><span className="vr-dialog-icon" aria-hidden="true">!</span><h2 id="vr-limit-title">Intervalo superior a 20 minutos</h2><p id="vr-limit-description">Para evitar errores y un uso excesivo de datos, cada solicitud puede cubrir como máximo 20 minutos. Reduce el intervalo antes de continuar.</p><ButtonView type="primary" onClick={() => setLimitDialogOpen(false)}>Entendido</ButtonView></section></div>}
     </main>
   );
 }
