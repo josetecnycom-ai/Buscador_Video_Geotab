@@ -104,10 +104,34 @@ export default function App({ api }) {
   }, [api]);
 
   useEffect(() => {
-    if (!database) return;
-    setHistory(readHistory(`${STORAGE_PREFIX}:${database}`));
-    reloadCameras();
-  }, [database]);
+    if (!database) return undefined;
+    let alive = true;
+    const savedHistory = readHistory(`${STORAGE_PREFIX}:${database}`);
+    setHistory(savedHistory);
+    setCamera(null);
+    setLoadingCameras(true);
+    setLoadError("");
+    listCameras(api).then((items) => {
+      if (!alive) return;
+      setCameras(items);
+      const pendingRows = savedHistory
+        .filter((row) => row.cameraSerial && ACTIVE.has(row.status))
+        .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+      const pendingCamera = pendingRows
+        .map((row) => items.find((item) => item.cameraSerial === row.cameraSerial))
+        .find(Boolean);
+      if (pendingCamera) {
+        setCamera(pendingCamera);
+      } else if (pendingRows.length) {
+        setNotice({ type: "error", text: "Hay solicitudes locales, pero no encuentro su cámara en la lista actual. Pulsa «Actualizar» para volver a cargarla." });
+      }
+    }).catch((error) => {
+      if (alive) setLoadError(error.message || "No se pudieron cargar las cámaras.");
+    }).finally(() => {
+      if (alive) setLoadingCameras(false);
+    });
+    return () => { alive = false; };
+  }, [api, database]);
 
   const refreshStatuses = useCallback(async () => {
     if (workerBusy.current || refreshBusy.current || !history.some((row) => row.requestId && ACTIVE.has(row.status))) return;
@@ -322,7 +346,10 @@ export default function App({ api }) {
   };
 
   const resumePending = async () => {
-    if (!camera) return;
+    if (!camera) {
+      setNotice({ type: "error", text: "Selecciona la cámara de los clips pendientes antes de reanudar." });
+      return;
+    }
     await submitRange(true);
   };
 
