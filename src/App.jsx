@@ -5,7 +5,7 @@ import { call, extractCapture, extractStatus, listCameras, makeClips, rangeDurat
 const STORAGE_PREFIX = "vtcplus-video-requests-v1";
 const MAX_PENDING = 16;
 const MAX_RANGE_SECONDS = 20 * 60;
-const ACTIVE = new Set(["PLANNED", "QUEUED", "SENT", "ONGOING", "DUPLICATE"]);
+const ACTIVE = new Set(["PLANNED", "SENDING", "QUEUED", "SENT", "ONGOING", "DUPLICATE"]);
 const DONE = new Set(["COMPLETED", "FAIL", "EXPIRED", "REJECTED", "ERROR"]);
 
 function readHistory(key) {
@@ -42,7 +42,9 @@ function formatClipStart(row) {
 }
 
 function statusLabel(status) {
-  return status === "PLANNED" ? "PENDIENTE DE ENVÍO" : status;
+  if (status === "PLANNED") return "PENDIENTE DE ENVÍO";
+  if (status === "SENDING") return "ENVIANDO";
+  return status;
 }
 
 export default function App({ api }) {
@@ -233,10 +235,14 @@ export default function App({ api }) {
           setNotice({ type: "error", text: `La solicitud ${terminalFailure.index} terminó como ${terminalFailure.status}. ${terminalFailure.failureReason || terminalFailure.lastError || "Revisa el estado en el historial."} No se enviaron automáticamente los siguientes clips.` });
           return;
         }
-        const unsent = rows.filter((row) => row.cameraSerial === camera.cameraSerial && row.status === "PLANNED");
+        const unsent = rows.filter((row) => row.cameraSerial === camera.cameraSerial && ["PLANNED", "SENDING"].includes(row.status));
         if (!unsent.length) break;
         const nextWave = unsent.slice(0, MAX_PENDING);
-        for (const row of nextWave) {
+        for (let sendIndex = 0; sendIndex < nextWave.length; sendIndex += 1) {
+          const row = nextWave[sendIndex];
+          rows = rows.map((item) => item.key === row.key ? { ...item, status: "SENDING", updatedAt: new Date().toISOString(), lastError: "" } : item);
+          saveHistory(rows);
+          setNotice({ type: "info", text: `Enviando clip ${sendIndex + 1} de ${nextWave.length} de esta tanda a MyGeotab…` });
           try {
             const result = await call(api, "Add", {
               typeName: "CameraEventCaptureRequest",
@@ -391,14 +397,24 @@ export default function App({ api }) {
             <div className="vr-capacity"><span>Cola por cámara</span><strong>Máximo 16 solicitudes</strong></div>
             <p className="vr-side-note">Las solicitudes siguen su curso en MyGeotab aunque cierres esta página. Al volver, se consultan los estados y puedes reanudar los clips que falten.</p>
           </section>
-          <section className="vr-card vr-history-card">
-            <div className="vr-history-heading"><div><h2>Actividad reciente</h2><p>{camera ? camera.assetName : "Todas las cámaras"}</p></div><ButtonView onClick={refreshStatuses} disabled={working}>↻</ButtonView></div>
+        <section className="vr-card vr-history-card">
+            <div className="vr-history-heading"><div><h2>Actividad reciente</h2><p>{camera ? camera.assetName : "Todas las cámaras"}</p></div><ButtonView onClick={() => {
+              const pendingToSend = history.filter((row) => ["PLANNED", "SENDING"].includes(row.status));
+              const requestsWithId = history.some((row) => row.requestId && ACTIVE.has(row.status));
+              if (!requestsWithId && pendingToSend.length) {
+                setNotice({ type: "info", text: `${pendingToSend.length} clips siguen pendientes de envío. Selecciona la cámara correspondiente y pulsa «Reanudar».` });
+              } else if (!requestsWithId) {
+                setNotice({ type: "info", text: "No hay solicitudes de MyGeotab que necesiten actualizar su estado." });
+              } else {
+                refreshStatuses();
+              }
+            }} disabled={working}>↻</ButtonView></div>
             {visibleHistory.length === 0 ? <div className="vr-empty vr-history-empty">Todavía no hay solicitudes en este navegador.</div> : (
               <div className="vr-history-list">
                 {[...visibleHistory].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30).map((row) => (
                   <div className="vr-history-row" key={row.key}>
                     <div className={`vr-status-dot status-${row.status}`} />
-                    <div className="vr-history-main"><strong>{row.licensePlate || row.assetName}</strong><span>{formatClipStart(row)} · {row.durationSeconds}s · hora local del activo</span>{row.status === "PLANNED" && <em>Aún no consta como enviada a MyGeotab. Pulsa «Reanudar» para continuar.</em>}{row.failureReason && <em>{row.failureReason}</em>}{row.lastError && !row.failureReason && <em>{row.lastError}</em>}</div>
+                    <div className="vr-history-main"><strong>{row.licensePlate || row.assetName}</strong><span>{formatClipStart(row)} · {row.durationSeconds}s · hora local del activo</span>{["PLANNED", "SENDING"].includes(row.status) && <em>{row.status === "PLANNED" ? "Aún no consta como enviada a MyGeotab. Pulsa «Reanudar» para continuar." : "Enviando a MyGeotab; esperando respuesta."}</em>}{row.failureReason && <em>{row.failureReason}</em>}{row.lastError && !row.failureReason && <em>{row.lastError}</em>}</div>
                     <span className={`vr-pill status-${row.status}`}>{statusLabel(row.status)}</span>
                   </div>
                 ))}

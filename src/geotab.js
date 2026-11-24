@@ -6,18 +6,16 @@ export function call(api, method, params = {}) {
   }
   return new Promise((resolve, reject) => {
     let settled = false;
-    const ok = (value) => {
+    const timeout = window.setTimeout(() => fail(new Error(`MyGeotab no respondió a ${method} en 60 segundos.`)), 60000);
+    const finish = (callback, value) => {
       if (!settled) {
         settled = true;
-        resolve(value);
+        window.clearTimeout(timeout);
+        callback(value);
       }
     };
-    const fail = (error) => {
-      if (!settled) {
-        settled = true;
-        reject(new Error(error?.message || String(error || "Error de MyGeotab.")));
-      }
-    };
+    const ok = (value) => finish(resolve, value);
+    const fail = (error) => finish(reject, new Error(error?.message || String(error || "Error de MyGeotab.")));
     try {
       const result = api.call(method, params, ok, fail);
       if (result && typeof result.then === "function") result.then(ok, fail);
