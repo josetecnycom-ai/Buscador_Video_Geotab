@@ -28,32 +28,37 @@ export function call(api, method, params = {}) {
 }
 
 export async function sessionInfo(api) {
+  if (api?.credentials?.database) return api.credentials;
   if (typeof api?.getSession === "function") {
-    const session = await new Promise((resolve, reject) => {
-      let settled = false;
-      const finish = (callback, value) => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeout);
-        callback(value);
-      };
-      const timeout = window.setTimeout(() => {
-        finish(reject, new Error("MyGeotab no respondió al consultar la sesión. Recarga el Add-In e inténtalo de nuevo."));
-      }, 20000);
-      try {
-        const result = api.getSession(
-          (value) => finish(resolve, value),
-          (error) => finish(reject, new Error(error?.message || String(error || "No se pudo consultar la sesión de MyGeotab."))),
-        );
-        if (result && typeof result.then === "function") {
-          result.then((value) => finish(resolve, value), (error) => finish(reject, error));
-        } else if (result && typeof result === "object") {
-          finish(resolve, result);
+    let session;
+    try {
+      session = await new Promise((resolve, reject) => {
+        let settled = false;
+        const finish = (callback, value) => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
+          callback(value);
+        };
+        const timeout = window.setTimeout(() => {
+          finish(reject, new Error("MyGeotab no respondió al consultar la sesión. Recarga el Add-In e inténtalo de nuevo."));
+        }, 20000);
+        try {
+          // In MyGeotab custom pages, getSession is callback-based.
+          const result = api.getSession((value) => finish(resolve, value));
+          if (result && typeof result.then === "function") {
+            result.then((value) => finish(resolve, value), (error) => finish(reject, error));
+          } else if (result && typeof result === "object") {
+            finish(resolve, result);
+          }
+        } catch (error) {
+          finish(reject, error);
         }
-      } catch (error) {
-        finish(reject, error);
-      }
-    });
+      });
+    } catch (error) {
+      if (api?.credentials?.database) return api.credentials;
+      throw new Error(error?.message || "No se pudo consultar la sesión de MyGeotab.");
+    }
     if (session?.database) return session;
     if (api?.credentials?.database) return api.credentials;
     throw new Error("MyGeotab no devolvió la base de datos de la sesión actual.");

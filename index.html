@@ -21,9 +21,9 @@
           initialize(api, state, callback) {
             apiRef = api;
             stateRef = state;
-            notifyReady();
             window.addEventListener("vtc-video-app-ready", notifyReady, { once: true });
             callback();
+            notifyReady();
           },
           focus(api, state) {
             apiRef = api || apiRef;
