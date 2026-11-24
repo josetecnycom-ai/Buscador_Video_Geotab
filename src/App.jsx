@@ -22,6 +22,29 @@ function ButtonView({ children, onClick, disabled, type = "secondary", className
   return <Button type={buttonType} onClick={onClick} disabled={disabled} className={className}>{children}</Button>;
 }
 
+function formatClipStart(row) {
+  const date = new Date(row.fromDate);
+  if (Number.isNaN(date.getTime())) return row.fromDate;
+  try {
+    return new Intl.DateTimeFormat("es-ES", {
+      timeZone: row.timeZone || "UTC",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).format(date);
+  } catch {
+    return row.fromDate;
+  }
+}
+
+function statusLabel(status) {
+  return status === "PLANNED" ? "PENDIENTE DE ENVÍO" : status;
+}
+
 export default function App({ api }) {
   const [database, setDatabase] = useState("");
   const [cameras, setCameras] = useState([]);
@@ -375,8 +398,8 @@ export default function App({ api }) {
                 {[...visibleHistory].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30).map((row) => (
                   <div className="vr-history-row" key={row.key}>
                     <div className={`vr-status-dot status-${row.status}`} />
-                    <div className="vr-history-main"><strong>{row.licensePlate || row.assetName}</strong><span>{row.fromDate} · {row.durationSeconds}s</span>{row.failureReason && <em>{row.failureReason}</em>}{row.lastError && !row.failureReason && <em>{row.lastError}</em>}</div>
-                    <span className={`vr-pill status-${row.status}`}>{row.status}</span>
+                    <div className="vr-history-main"><strong>{row.licensePlate || row.assetName}</strong><span>{formatClipStart(row)} · {row.durationSeconds}s · hora local del activo</span>{row.status === "PLANNED" && <em>Aún no consta como enviada a MyGeotab. Pulsa «Reanudar» para continuar.</em>}{row.failureReason && <em>{row.failureReason}</em>}{row.lastError && !row.failureReason && <em>{row.lastError}</em>}</div>
+                    <span className={`vr-pill status-${row.status}`}>{statusLabel(row.status)}</span>
                   </div>
                 ))}
               </div>
