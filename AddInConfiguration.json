@@ -1,0 +1,15 @@
+{
+  "name": "Solicitud de vídeo VTC Plus",
+  "version": "1.0.0",
+  "items": [
+    {
+      "url": "https://josetecnycom-ai.github.io/Buscador_Video_Geotab/",
+      "path": "VideoId/",
+      "menuName": {
+        "es": "Solicitar vídeo",
+        "en": "Request video"
+      }
+    }
+  ],
+  "files": {}
+}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#15345b" />
+    <meta name="description" content="Solicita capturas de vídeo de cámaras Geotab." />
+    <title>Solicitud de vídeo · VTC Plus</title>
+    <script>
+      window.geotab = window.geotab || {};
+      window.geotab.addin = window.geotab.addin || {};
+      window.geotab.addin.vtcVideoRequest = function () {
+        let apiRef;
+        let stateRef;
+        const notifyReady = () => {
+          if (window.__VTC_VIDEO_MOUNT__ && apiRef) {
+            window.__VTC_VIDEO_MOUNT__(apiRef, stateRef);
+          }
+        };
+        return {
+          initialize(api, state, callback) {
+            apiRef = api;
+            stateRef = state;
+            notifyReady();
+            window.addEventListener("vtc-video-app-ready", notifyReady, { once: true });
+            callback();
+          },
+          focus(api, state) {
+            apiRef = api || apiRef;
+            stateRef = state || stateRef;
+            window.dispatchEvent(new CustomEvent("vtc-video-focus"));
+          },
+          blur() {
+            window.dispatchEvent(new CustomEvent("vtc-video-blur"));
+          },
+        };
+      };
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

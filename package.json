@@ -1,0 +1,20 @@
+{
+  "name": "buscador-video-geotab",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@geotab/zenith": "3.19.1",
+    "luxon": "^3.7.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "vite": "^7.1.12"
+  }
+}

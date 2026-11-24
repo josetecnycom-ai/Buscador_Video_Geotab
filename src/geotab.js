@@ -1,0 +1,129 @@
+import { DateTime } from "luxon";
+
+export function call(api, method, params = {}) {
+  if (!api || typeof api.call !== "function") {
+    return Promise.reject(new Error("No está disponible la sesión API de MyGeotab."));
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const ok = (value) => {
+      if (!settled) {
+        settled = true;
+        resolve(value);
+      }
+    };
+    const fail = (error) => {
+      if (!settled) {
+        settled = true;
+        reject(new Error(error?.message || String(error || "Error de MyGeotab.")));
+      }
+    };
+    try {
+      const result = api.call(method, params, ok, fail);
+      if (result && typeof result.then === "function") result.then(ok, fail);
+    } catch (error) {
+      fail(error);
+    }
+  });
+}
+
+export async function sessionInfo(api) {
+  if (typeof api?.getSession === "function") {
+    const result = api.getSession();
+    return result && typeof result.then === "function" ? result : result;
+  }
+  if (api?.credentials?.database) return api.credentials;
+  throw new Error("No pude identificar la base de datos de la sesión de MyGeotab.");
+}
+
+function text(value) {
+  if (value && typeof value === "object") return String(value.id || value.name || "");
+  return value == null ? "" : String(value);
+}
+
+export function normalizeCameras(cameraItems, devices) {
+  const byId = new Map(devices.map((device) => [text(device.id), device]));
+  const bySerial = new Map(devices.map((device) => [text(device.serialNumber).toUpperCase(), device]));
+  return cameraItems.flatMap((camera) => {
+    const serial = text(camera.cameraSerialNumber || camera.serialNumber || camera.serial);
+    if (!serial) return [];
+    const deviceId = text(camera.deviceId || camera.device);
+    const deviceSerial = text(camera.deviceSerialNumber);
+    const device = byId.get(deviceId) || bySerial.get(deviceSerial.toUpperCase()) || {};
+    return [{
+      cameraSerial: serial,
+      cameraName: text(camera.name || camera.cameraName),
+      assetName: text(camera.deviceName || camera.assetName || device.name) || "Activo sin nombre",
+      licensePlate: text(camera.licensePlate || camera.vehicleLicensePlate || device.licensePlate),
+      deviceSerial: deviceSerial || text(device.serialNumber),
+      timeZone: text(camera.timeZoneId || device.timeZoneId),
+      vendor: text(camera.vendor || camera.cameraVendor),
+    }];
+  });
+}
+
+export async function listCameras(api) {
+  const [cameraItems, deviceItems] = await Promise.all([
+    call(api, "Get", { typeName: "Camera", resultsLimit: 50000 }),
+    call(api, "Get", { typeName: "Device", resultsLimit: 50000 }),
+  ]);
+  return normalizeCameras(cameraItems || [], deviceItems || []);
+}
+
+export function localInputToUtc(value, timeZone) {
+  const parsed = DateTime.fromISO(value, { zone: timeZone, setZone: true });
+  if (!parsed.isValid) {
+    throw new Error("La fecha u hora no es válida para la zona horaria del activo.");
+  }
+  if (parsed.toFormat("yyyy-MM-dd'T'HH:mm") !== value) {
+    throw new Error("La hora no existe en la zona horaria del activo por el cambio de horario.");
+  }
+  if (typeof parsed.getPossibleOffsets === "function" && parsed.getPossibleOffsets().length > 1) {
+    throw new Error("La hora elegida se repite por el cambio de horario. Elige una hora distinta.");
+  }
+  return parsed.toUTC().toISO({ suppressMilliseconds: true });
+}
+
+export function makeClips(startValue, endValue, timeZone, cameraSerial, database) {
+  const startUtc = DateTime.fromISO(localInputToUtc(startValue, timeZone), { setZone: true });
+  const endUtc = DateTime.fromISO(localInputToUtc(endValue, timeZone), { setZone: true });
+  const totalSeconds = Math.floor(endUtc.diff(startUtc, "seconds").seconds);
+  if (totalSeconds <= 0) throw new Error("La hora final debe ser posterior a la inicial.");
+  const clips = [];
+  for (let offset = 0, index = 1; offset < totalSeconds; offset += 120, index += 1) {
+    const duration = Math.min(120, totalSeconds - offset);
+    const fromDate = startUtc.plus({ seconds: offset }).toISO({ suppressMilliseconds: true });
+    clips.push({
+      cameraSerialNumber: cameraSerial,
+      fromDate,
+      durationSeconds: duration,
+      requestEventName: `Captura ${database} ${cameraSerial} ${index}`.slice(0, 100),
+      mediaType: "VIDEO",
+      index,
+      key: `${database}|${cameraSerial}|${fromDate}|${duration}`,
+    });
+  }
+  return clips;
+}
+
+export function extractCapture(value) {
+  const records = Array.isArray(value) ? value : [value];
+  const record = records.find((item) => item && typeof item === "object" && (item.status || item.eventCaptureRequestId || item.id));
+  if (!record) return { status: "ERROR", requestId: "", failureReason: "MyGeotab devolvió una respuesta sin ID de solicitud." };
+  return {
+    status: String(record.status || "QUEUED").toUpperCase(),
+    requestId: String(record.eventCaptureRequestId || record.id || ""),
+    failureReason: String(record.failureReason || ""),
+  };
+}
+
+export function extractStatus(value) {
+  const records = Array.isArray(value) ? value : [value];
+  const record = records.find((item) => item && typeof item === "object" && item.status);
+  if (!record) return null;
+  return {
+    status: String(record.status).toUpperCase(),
+    failureReason: String(record.failureReason || ""),
+  };
+}
+

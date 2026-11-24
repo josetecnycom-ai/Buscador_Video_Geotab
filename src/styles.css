@@ -1,0 +1,96 @@
+:root {
+  font-family: "Roboto", "Segoe UI", Arial, sans-serif;
+  color: #24364b;
+  background: #f4f7fa;
+  font-synthesis: none;
+  --vr-navy: #18385f;
+  --vr-blue: #0c6cad;
+  --vr-blue-soft: #eaf3fb;
+  --vr-line: #e0e7ee;
+  --vr-muted: #65788b;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 360px; background: #f4f7fa; }
+button, input { font: inherit; }
+.vr-shell { max-width: 1320px; margin: 0 auto; padding: 30px 30px 42px; }
+.vr-header { display:flex; align-items:center; gap:16px; margin-bottom:22px; }
+.vr-brand-mark { width:48px; height:48px; display:grid; place-items:center; border-radius:13px; background:var(--vr-navy); color:#fff; font-size:22px; font-weight:750; }
+.vr-heading { flex:1; }
+.vr-eyebrow { color:#71859a; font-size:10px; font-weight:750; letter-spacing:.11em; margin-bottom:4px; }
+.vr-heading h1 { margin:0; color:#1b3048; font-size:26px; line-height:1.25; font-weight:700; }
+.vr-heading p { margin:5px 0 0; color:var(--vr-muted); font-size:13px; }
+.vr-session { display:flex; align-items:center; gap:8px; color:#306747; font-size:12px; font-weight:650; }
+.vr-dot { width:8px; height:8px; background:#35a765; border-radius:50%; }
+.vr-database { color:#496078; padding:7px 10px; background:white; border:1px solid var(--vr-line); border-radius:7px; font-weight:500; }
+.vr-layout { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(310px,.8fr); align-items:start; gap:18px; }
+.vr-card { background:#fff; border:1px solid var(--vr-line); border-radius:12px; box-shadow:0 2px 8px #233b5208; padding:21px; }
+.vr-form-card { padding:24px; }
+.vr-card-heading { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+.vr-card-heading h2,.vr-summary h2,.vr-history-heading h2 { margin:0; color:#20354d; font-size:16px; font-weight:700; }
+.vr-card-heading p,.vr-summary-top p,.vr-history-heading p { margin:4px 0 0; color:var(--vr-muted); font-size:12px; }
+.vr-step { width:27px; height:27px; flex:0 0 auto; display:grid; place-items:center; border-radius:50%; background:#eaf2fa; color:#1e5f95; font-size:12px; font-weight:750; }
+.vr-card-heading > div { flex:1; }
+.vr-label { display:block; margin:0 0 6px; color:#40566d; font-size:12px; font-weight:650; }
+.vr-input { width:100%; height:39px; border:1px solid #cbd7e2; border-radius:7px; background:#fff; color:#20364e; padding:0 11px; font-size:13px; outline:none; }
+.vr-input:focus { border-color:#4285bd; box-shadow:0 0 0 3px #dcecf8; }
+.vr-camera-list { max-height:260px; overflow:auto; margin-top:8px; border:1px solid var(--vr-line); border-radius:8px; }
+.vr-camera { display:flex; width:100%; min-height:56px; align-items:center; gap:11px; text-align:left; padding:9px 12px; border:0; border-bottom:1px solid #edf1f4; background:white; cursor:pointer; }
+.vr-camera:last-child { border-bottom:0; }
+.vr-camera:hover { background:#f8fbfd; }
+.vr-camera.is-selected { background:#eef6fc; box-shadow:inset 3px 0 #2176ad; }
+.vr-camera-icon { color:#3f718f; width:25px; text-align:center; font-size:18px; }
+.vr-camera-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.vr-camera-info strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#243a52; font-size:12px; }
+.vr-camera-info span { color:#77899a; font-size:11px; }
+.vr-camera-serial { color:#60758b; font-size:11px; font-variant-numeric:tabular-nums; }
+.vr-check { width:17px; color:#176ca8; font-weight:800; }
+.vr-empty { display:flex; min-height:56px; align-items:center; justify-content:center; gap:9px; color:#718294; font-size:12px; padding:12px; }
+.vr-list-foot { margin:0; padding:9px 11px; color:#76899b; background:#fafcfd; font-size:11px; }
+.vr-selected { display:flex; flex-direction:column; gap:4px; margin-top:12px; padding:11px 12px; border-radius:8px; background:#f5f9fc; }
+.vr-selected-label { color:#6d8296; font-size:9px; font-weight:750; letter-spacing:.1em; }
+.vr-selected strong { color:#29445e; font-size:12px; }
+.vr-selected span:last-child { color:#6f8397; font-size:11px; }
+.vr-divider { height:1px; background:#e9eef2; margin:21px 0; }
+.vr-date-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.vr-info-strip { display:flex; align-items:flex-start; gap:9px; margin-top:14px; padding:11px 12px; border:1px solid #dceaf5; border-radius:8px; background:#f4f9fd; color:#47647b; font-size:11px; line-height:1.5; }
+.vr-info-strip span:first-child { color:#2e76a6; font-size:14px; }
+.vr-form-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:18px; }
+.vr-working { display:inline-flex; align-items:center; gap:8px; color:#536c83; font-size:11px; }
+.vr-side { display:flex; flex-direction:column; gap:14px; }
+.vr-summary-top { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.vr-summary-icon { width:34px; height:34px; display:grid; place-items:center; background:#edf4fa; color:#306d9b; border-radius:9px; font-size:18px; }
+.vr-stat { display:flex; align-items:baseline; gap:8px; padding:10px 0; border-top:1px solid #edf1f4; }
+.vr-stat strong { min-width:34px; color:#1f4265; font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+.vr-stat span { color:#65798d; font-size:11px; }
+.vr-capacity { display:flex; justify-content:space-between; gap:8px; padding:11px 0 3px; border-top:1px solid #edf1f4; color:#65798d; font-size:11px; }
+.vr-capacity strong { color:#35546f; font-size:11px; }
+.vr-side-note { margin:11px 0 0; color:#76889a; font-size:11px; line-height:1.55; }
+.vr-history-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+.vr-history-list { max-height:370px; overflow:auto; }
+.vr-history-row { display:flex; align-items:flex-start; gap:9px; padding:11px 0; border-top:1px solid #edf1f4; }
+.vr-history-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+.vr-history-main strong { overflow:hidden; color:#30475e; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+.vr-history-main span { color:#788a9a; font-size:10px; font-variant-numeric:tabular-nums; }
+.vr-history-main em { color:#9b3b37; font-size:10px; font-style:normal; line-height:1.35; }
+.vr-status-dot { width:8px; height:8px; margin-top:3px; border-radius:50%; background:#99a7b4; }
+.vr-status-dot.status-COMPLETED { background:#32a36a; }
+.vr-status-dot.status-QUEUED,.vr-status-dot.status-PLANNED { background:#d5a32b; }
+.vr-status-dot.status-SENT,.vr-status-dot.status-ONGOING { background:#2d81ba; }
+.vr-status-dot.status-FAIL,.vr-status-dot.status-EXPIRED,.vr-status-dot.status-REJECTED,.vr-status-dot.status-ERROR { background:#d94b45; }
+.vr-pill { padding:4px 7px; border-radius:20px; background:#eff2f5; color:#687d90; font-size:9px; font-weight:750; }
+.vr-pill.status-COMPLETED { background:#e8f6ee; color:#26734c; }
+.vr-pill.status-QUEUED,.vr-pill.status-PLANNED { background:#fff5df; color:#8a6411; }
+.vr-pill.status-SENT,.vr-pill.status-ONGOING { background:#eaf3fb; color:#286c9f; }
+.vr-pill.status-FAIL,.vr-pill.status-EXPIRED,.vr-pill.status-REJECTED,.vr-pill.status-ERROR { background:#fff0ee; color:#a83d36; }
+.vr-history-empty { border:1px dashed #dfe6ec; border-radius:8px; min-height:86px; text-align:center; }
+.vr-footnote { padding:3px 4px; color:#718498; font-size:10px; line-height:1.5; }
+.vr-notice { margin:0 0 14px; padding:11px 14px; border:1px solid transparent; border-radius:8px; font-size:12px; line-height:1.45; }
+.vr-notice--info { border-color:#d9e9f5; background:#f1f8fd; color:#345e7b; }
+.vr-notice--success { border-color:#d8eddf; background:#f0faf3; color:#2c6842; }
+.vr-notice--error { border-color:#f2d6d3; background:#fff4f2; color:#983b34; }
+.vr-spinner { display:inline-block; width:13px; height:13px; border:2px solid #d8e1e8; border-top-color:#397aa5; border-radius:50%; animation:vr-spin .8s linear infinite; }
+@keyframes vr-spin { to { transform:rotate(360deg); } }
+
+@media (max-width:900px) { .vr-layout { grid-template-columns:1fr; } .vr-side { display:grid; grid-template-columns:1fr 1fr; align-items:start; } .vr-footnote { grid-column:1/-1; } }
+@media (max-width:600px) { .vr-shell { padding:18px 12px 28px; } .vr-header { align-items:flex-start; flex-wrap:wrap; } .vr-session { width:100%; margin-left:64px; } .vr-heading h1 { font-size:21px; } .vr-heading p { font-size:11px; } .vr-form-card,.vr-card { padding:16px; } .vr-side { display:flex; } .vr-date-grid { grid-template-columns:1fr; } .vr-camera-serial { display:none; } }
