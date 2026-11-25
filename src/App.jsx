@@ -148,7 +148,7 @@ export default function App({ api }) {
             search: { eventCaptureRequestId: [row.requestId] },
           });
           const status = extractStatus(result);
-          return status ? { ...row, ...status, updatedAt: new Date().toISOString() } : row;
+          return status ? { ...row, ...status, lastError: "", updatedAt: new Date().toISOString() } : row;
         } catch (error) {
           return { ...row, lastError: error.message || "No se pudo consultar el estado." };
         }
@@ -254,7 +254,7 @@ export default function App({ api }) {
               search: { eventCaptureRequestId: [row.requestId] },
             });
             const state = extractStatus(result);
-            if (state) rows = rows.map((item) => item.key === row.key ? { ...item, ...state, updatedAt: new Date().toISOString() } : item);
+            if (state) rows = rows.map((item) => item.key === row.key ? { ...item, ...state, lastError: "", updatedAt: new Date().toISOString() } : item);
           } catch (error) {
             rows = rows.map((item) => item.key === row.key ? { ...item, lastError: error.message } : item);
           }
@@ -275,7 +275,7 @@ export default function App({ api }) {
                   search: { eventCaptureRequestId: [row.requestId] },
                 });
                 const state = extractStatus(result);
-                return state ? { ...row, ...state, updatedAt: new Date().toISOString() } : row;
+                return state ? { ...row, ...state, lastError: "", updatedAt: new Date().toISOString() } : row;
               } catch (error) {
                 pollFailed = true;
                 return { ...row, lastError: error.message || "Error consultando el estado." };
@@ -337,7 +337,7 @@ export default function App({ api }) {
                 search: { eventCaptureRequestId: [row.requestId] },
               });
               const state = extractStatus(result);
-              return state ? { ...row, ...state, updatedAt: new Date().toISOString() } : row;
+              return state ? { ...row, ...state, lastError: "", updatedAt: new Date().toISOString() } : row;
             } catch (error) {
               pollFailed = true;
               return { ...row, lastError: error.message || "Error consultando el estado." };
