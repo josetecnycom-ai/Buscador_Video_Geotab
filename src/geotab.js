@@ -15,7 +15,19 @@ export function call(api, method, params = {}) {
       }
     };
     const ok = (value) => finish(resolve, value);
-    const fail = (error) => finish(reject, new Error(error?.message || String(error || "Error de MyGeotab.")));
+    const fail = (error) => {
+      const base = error?.message || String(error || "Error de MyGeotab.");
+      const details = [];
+      if (error?.code != null) details.push(`código ${error.code}`);
+      if (error?.name) details.push(`tipo ${error.name}`);
+      if (error?.data?.type) details.push(`excepción ${error.data.type}`);
+      if (error?.data?.requestIndex != null) details.push(`índice ${error.data.requestIndex}`);
+      if (Array.isArray(error?.errors)) {
+        const messages = error.errors.map((item) => item?.message).filter(Boolean);
+        if (messages.length) details.push(messages.join("; "));
+      }
+      finish(reject, new Error(details.length ? `${base} (${details.join(", ")})` : base));
+    };
     try {
       const result = api.call(method, params, ok, fail);
       if (result && typeof result.then === "function") result.then(ok, fail);

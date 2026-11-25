@@ -171,9 +171,10 @@ export default function App({ api }) {
     };
   }, [refreshStatuses]);
 
-  const submitRange = async (resume = false) => {
+  const submitRange = async (resume = false, retryErrors = false) => {
     if (!camera || !database) return;
     let rows = history;
+    let newClips = [];
     let scopeKeys = new Set();
     if (!resume) {
       if (!camera.timeZone) {
@@ -188,7 +189,7 @@ export default function App({ api }) {
         return;
       }
       const knownKeys = new Set(history.map((row) => row.key));
-      const newClips = clips.filter((clip) => !knownKeys.has(clip.key));
+      newClips = clips.filter((clip) => !knownKeys.has(clip.key));
       scopeKeys = new Set(clips.map((clip) => clip.key));
       const plan = newClips.map((clip) => ({
         ...clip,
@@ -202,6 +203,15 @@ export default function App({ api }) {
         updatedAt: new Date().toISOString(),
       }));
       rows = [...history, ...plan];
+      saveHistory(rows);
+    } else if (retryErrors) {
+      const retryKeys = new Set(rows
+        .filter((row) => row.cameraSerial === camera.cameraSerial && row.status === "ERROR" && !row.requestId)
+        .map((row) => row.key));
+      scopeKeys = retryKeys;
+      rows = rows.map((row) => retryKeys.has(row.key)
+        ? { ...row, status: "PLANNED", failureReason: "", lastError: "", updatedAt: new Date().toISOString() }
+        : row);
       saveHistory(rows);
     } else {
       scopeKeys = new Set(rows
@@ -217,7 +227,7 @@ export default function App({ api }) {
     }
     workerBusy.current = true;
     setWorking(true);
-    setNotice({ type: "info", text: resume ? "Reanudando las solicitudes guardadas…" : `${newClips.length} clips nuevos preparados; se enviarán por tandas.` });
+    setNotice({ type: "info", text: retryErrors ? `Reintentando ${scopeKeys.size} solicitudes fallidas…` : resume ? "Reanudando las solicitudes guardadas…" : `${newClips.length} clips nuevos preparados; se enviarán por tandas.` });
     try {
       // Resume is safe: recorded IDs are polled, never submitted again.
       for (let offset = 0; offset < rows.length; offset += MAX_PENDING) {
@@ -356,7 +366,16 @@ export default function App({ api }) {
     await submitRange(true);
   };
 
+  const retryFailed = async () => {
+    if (!camera) {
+      setNotice({ type: "error", text: "Selecciona la cámara de las solicitudes fallidas antes de reintentar." });
+      return;
+    }
+    await submitRange(true, true);
+  };
+
   const activeCount = history.filter((row) => row.cameraSerial === camera?.cameraSerial && ACTIVE.has(row.status)).length;
+  const failedRetryCount = history.filter((row) => row.cameraSerial === camera?.cameraSerial && row.status === "ERROR" && !row.requestId).length;
   const rangeValidation = useMemo(() => {
     if (!camera || !start || !end) return { seconds: null, error: "" };
     try {
@@ -415,6 +434,7 @@ export default function App({ api }) {
           <div className="vr-form-actions">
             <ButtonView type="primary" onClick={startNewRequest} disabled={!camera || !start || !end || working || !camera.timeZone || Boolean(rangeValidation.error && rangeValidation.seconds <= MAX_RANGE_SECONDS)}>Solicitar capturas</ButtonView>
             {activeCount > 0 && <ButtonView onClick={resumePending} disabled={working}>Reanudar {activeCount} pendientes</ButtonView>}
+            {failedRetryCount > 0 && <ButtonView onClick={retryFailed} disabled={working}>Reintentar {failedRetryCount} errores</ButtonView>}
             {working && <span className="vr-working"><span className="vr-spinner" />Procesando solicitudes</span>}
           </div>
         </section>
