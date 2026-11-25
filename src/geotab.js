@@ -1,8 +1,75 @@
 import { DateTime } from "luxon";
 
+async function getActiveSession(api) {
+  if (typeof api?.getSession !== "function") return sessionInfo(api);
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      callback(value);
+    };
+    const timeout = window.setTimeout(() => finish(reject, new Error("No se pudo leer la sesión activa de MyGeotab.")), 20000);
+    try {
+      const result = api.getSession((session) => session
+        ? finish(resolve, session)
+        : finish(reject, new Error("MyGeotab no devolvió la sesión activa.")));
+      if (result && typeof result.then === "function") {
+        result.then((session) => session
+          ? finish(resolve, session)
+          : finish(reject, new Error("MyGeotab no devolvió la sesión activa.")),
+        (error) => finish(reject, error));
+      } else if (result && typeof result === "object") {
+        finish(resolve, result);
+      }
+    } catch (error) {
+      finish(reject, error);
+    }
+  });
+}
+
+async function rawCaptureAdd(api, params) {
+  const session = await getActiveSession(api);
+  const credentials = {
+    database: String(session?.database || ""),
+    userName: String(session?.userName || ""),
+    sessionId: String(session?.sessionId || ""),
+  };
+  if (!credentials.database || !credentials.userName || !credentials.sessionId) {
+    throw new Error("La sesión de MyGeotab no contiene las credenciales necesarias para crear la captura.");
+  }
+  const server = String(session?.server || "my.geotab.com")
+    .replace(/^https?:\/\//i, "")
+    .split("/")[0];
+  const response = await fetch(`https://${server}/apiv1`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ method: "Add", params: { ...params, credentials } }),
+  });
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error(`MyGeotab devolvió una respuesta HTTP ${response.status} no válida al solicitar vídeo.`);
+  }
+  if (!response.ok || payload?.error) {
+    const error = payload?.error || {};
+    const details = [error.message || `HTTP ${response.status}`];
+    if (error.code != null) details.push(`código ${error.code}`);
+    if (error.data?.type) details.push(`tipo ${error.data.type}`);
+    if (error.data?.requestIndex != null) details.push(`índice ${error.data.requestIndex}`);
+    throw new Error(details.length > 1 ? `${details[0]} (${details.slice(1).join(", ")})` : details[0]);
+  }
+  return payload?.result;
+}
+
 export function call(api, method, params = {}) {
   if (!api || typeof api.call !== "function") {
     return Promise.reject(new Error("No está disponible la sesión API de MyGeotab."));
+  }
+  if (method === "Add" && params.typeName === "CameraEventCaptureRequest") {
+    return rawCaptureAdd(api, params);
   }
   return new Promise((resolve, reject) => {
     let settled = false;
