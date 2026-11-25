@@ -356,7 +356,7 @@ export default function App({ api }) {
           return;
         }
       }
-      setNotice({ type: "success", text: "Todas las solicitudes de este intervalo han finalizado. Los vídeos se consultan desde MyGeotab." });
+      setNotice({ type: "success", text: "Todas las solicitudes han finalizado. Consulta los vídeos en MyGeotab > Eventos de vídeo > Generados por el sistema." });
     } catch (error) {
       setNotice({ type: "error", text: error.message || "No se pudo completar la solicitud." });
     } finally {
@@ -503,7 +503,7 @@ export default function App({ api }) {
             )}
             {visibleHistory.length > 30 && <p className="vr-list-foot">Mostrando las 30 más recientes. Se conservan {visibleHistory.length}.</p>}
           </section>
-          <div className="vr-footnote">No se descargan archivos. Para visualizar las grabaciones, abre la sección de vídeo de MyGeotab cuando la captura figure como completada.</div>
+          <div className="vr-footnote">Los vídeos no se descargan desde esta página. Para verlos, abre MyGeotab &gt; Eventos de vídeo &gt; Generados por el sistema y busca el activo y el intervalo solicitado.</div>
         </aside>
       </div>
       {limitDialogOpen && <div className="vr-modal-backdrop"><section className="vr-limit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="vr-limit-title" aria-describedby="vr-limit-description"><span className="vr-dialog-icon" aria-hidden="true">!</span><h2 id="vr-limit-title">Intervalo superior a 20 minutos</h2><p id="vr-limit-description">Para evitar errores y un uso excesivo de datos, cada solicitud puede cubrir como máximo 20 minutos. Reduce el intervalo antes de continuar.</p><ButtonView type="primary" onClick={() => setLimitDialogOpen(false)}>Entendido</ButtonView></section></div>}
