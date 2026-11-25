@@ -29,7 +29,7 @@ async function getActiveSession(api) {
   });
 }
 
-async function rawCaptureAdd(api, params) {
+async function rawCaptureCall(api, method, params) {
   const session = await getActiveSession(api);
   const credentials = {
     database: String(session?.database || ""),
@@ -45,13 +45,13 @@ async function rawCaptureAdd(api, params) {
   const response = await fetch(`https://${server}/apiv1`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ method: "Add", params: { ...params, credentials } }),
+    body: JSON.stringify({ method, params: { ...params, credentials } }),
   });
   let payload;
   try {
     payload = await response.json();
   } catch {
-    throw new Error(`MyGeotab devolvió una respuesta HTTP ${response.status} no válida al solicitar vídeo.`);
+    throw new Error(`MyGeotab devolvió una respuesta HTTP ${response.status} no válida al consultar la solicitud de vídeo.`);
   }
   if (!response.ok || payload?.error) {
     const error = payload?.error || {};
@@ -68,8 +68,8 @@ export function call(api, method, params = {}) {
   if (!api || typeof api.call !== "function") {
     return Promise.reject(new Error("No está disponible la sesión API de MyGeotab."));
   }
-  if (method === "Add" && params.typeName === "CameraEventCaptureRequest") {
-    return rawCaptureAdd(api, params);
+  if (["Add", "Get"].includes(method) && params.typeName === "CameraEventCaptureRequest") {
+    return rawCaptureCall(api, method, params);
   }
   return new Promise((resolve, reject) => {
     let settled = false;

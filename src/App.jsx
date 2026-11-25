@@ -263,8 +263,10 @@ export default function App({ api }) {
         const outstanding = rows.filter((row) => row.cameraSerial === camera.cameraSerial && row.requestId && ACTIVE.has(row.status));
         if (outstanding.length) {
           setNotice({ type: "info", text: `${outstanding.length} solicitudes pendientes. Esperando a que MyGeotab libere espacio…` });
+          let consecutivePollFailures = 0;
           while (rows.some((row) => row.cameraSerial === camera.cameraSerial && row.requestId && ACTIVE.has(row.status))) {
             await new Promise((resolve) => window.setTimeout(resolve, 30000));
+            let pollFailed = false;
             const refreshed = await Promise.all(rows.map(async (row) => {
               if (row.cameraSerial !== camera.cameraSerial || !row.requestId || !ACTIVE.has(row.status)) return row;
               try {
@@ -275,11 +277,17 @@ export default function App({ api }) {
                 const state = extractStatus(result);
                 return state ? { ...row, ...state, updatedAt: new Date().toISOString() } : row;
               } catch (error) {
+                pollFailed = true;
                 return { ...row, lastError: error.message || "Error consultando el estado." };
               }
             }));
             rows = refreshed;
             saveHistory(rows);
+            consecutivePollFailures = pollFailed ? consecutivePollFailures + 1 : 0;
+            if (consecutivePollFailures >= 3) {
+              setNotice({ type: "error", text: "MyGeotab aceptó solicitudes, pero falló tres veces seguidas al consultar sus estados. Se detuvo el indicador; conserva los identificadores y vuelve a actualizar más tarde." });
+              return;
+            }
           }
         }
         const terminalFailure = rows.find((row) => scopeKeys.has(row.key) && ["FAIL", "EXPIRED", "REJECTED", "ERROR"].includes(row.status));
@@ -317,8 +325,10 @@ export default function App({ api }) {
           }
         }
         setNotice({ type: "info", text: `Enviada una tanda de ${nextWave.length}. Esperando el resultado de MyGeotab…` });
+        let consecutivePollFailures = 0;
         while (rows.some((row) => nextWave.some((sent) => sent.key === row.key) && row.requestId && ACTIVE.has(row.status))) {
           await new Promise((resolve) => window.setTimeout(resolve, 30000));
+          let pollFailed = false;
           rows = await Promise.all(rows.map(async (row) => {
             if (!nextWave.some((sent) => sent.key === row.key) || !row.requestId || !ACTIVE.has(row.status)) return row;
             try {
@@ -329,10 +339,16 @@ export default function App({ api }) {
               const state = extractStatus(result);
               return state ? { ...row, ...state, updatedAt: new Date().toISOString() } : row;
             } catch (error) {
+              pollFailed = true;
               return { ...row, lastError: error.message || "Error consultando el estado." };
             }
           }));
           saveHistory(rows);
+          consecutivePollFailures = pollFailed ? consecutivePollFailures + 1 : 0;
+          if (consecutivePollFailures >= 3) {
+            setNotice({ type: "error", text: "MyGeotab aceptó solicitudes, pero falló tres veces seguidas al consultar sus estados. Se detuvo el indicador; conserva los identificadores y vuelve a actualizar más tarde." });
+            return;
+          }
         }
         const failure = rows.find((row) => nextWave.some((sent) => sent.key === row.key) && ["FAIL", "EXPIRED", "REJECTED", "ERROR"].includes(row.status));
         if (failure) {
