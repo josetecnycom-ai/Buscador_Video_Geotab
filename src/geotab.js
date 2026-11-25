@@ -151,20 +151,28 @@ export function rangeDurationSeconds(startValue, endValue, timeZone) {
   return seconds;
 }
 
-export function makeClips(startValue, endValue, timeZone, cameraSerial, database) {
+export function makeRequestEventName(fromDate, timeZone, assetLabel, cameraSerial) {
+  const localStart = DateTime.fromISO(fromDate, { setZone: true })
+    .setZone(timeZone)
+    .toFormat("yyyy-MM-dd'T'HH:mm:ss");
+  return `Captura ${assetLabel || cameraSerial} ${localStart}`.slice(0, 100);
+}
+
+export function makeClips(startValue, endValue, timeZone, cameraSerial, database, assetLabel = cameraSerial) {
   const startUtc = DateTime.fromISO(localInputToUtc(startValue, timeZone), { setZone: true });
   const endUtc = DateTime.fromISO(localInputToUtc(endValue, timeZone), { setZone: true });
   const totalSeconds = rangeDurationSeconds(startValue, endValue, timeZone);
   const clips = [];
   for (let offset = 0, index = 1; offset < totalSeconds; offset += 120, index += 1) {
     const duration = Math.min(120, totalSeconds - offset);
-    const fromDate = startUtc.plus({ seconds: offset }).toISO({ suppressMilliseconds: true });
+    const clipStart = startUtc.plus({ seconds: offset });
+    const fromDate = clipStart.toISO({ suppressMilliseconds: true });
     clips.push({
       cameraSerial,
       cameraSerialNumber: cameraSerial,
       fromDate,
       durationSeconds: duration,
-      requestEventName: `Captura ${database} ${cameraSerial} ${index}`.slice(0, 100),
+      requestEventName: makeRequestEventName(fromDate, timeZone, assetLabel, cameraSerial),
       mediaType: "VIDEO",
       index,
       key: `${database}|${cameraSerial}|${fromDate}|${duration}`,

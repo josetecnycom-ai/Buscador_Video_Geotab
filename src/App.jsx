@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, ButtonType } from "@geotab/zenith";
-import { call, extractCapture, extractStatus, listCameras, makeClips, rangeDurationSeconds, sessionInfo } from "./geotab.js";
+import { call, extractCapture, extractStatus, listCameras, makeClips, makeRequestEventName, rangeDurationSeconds, sessionInfo } from "./geotab.js";
 
 const STORAGE_PREFIX = "vtcplus-video-requests-v1";
 const MAX_PENDING = 16;
@@ -183,7 +183,7 @@ export default function App({ api }) {
       }
       let clips;
       try {
-        clips = makeClips(start, end, camera.timeZone, camera.cameraSerial, database);
+        clips = makeClips(start, end, camera.timeZone, camera.cameraSerial, database, camera.licensePlate || camera.assetName || camera.cameraSerial);
       } catch (error) {
         setNotice({ type: "error", text: error.message });
         return;
@@ -210,13 +210,28 @@ export default function App({ api }) {
         .map((row) => row.key));
       scopeKeys = retryKeys;
       rows = rows.map((row) => retryKeys.has(row.key)
-        ? { ...row, status: "PLANNED", failureReason: "", lastError: "", updatedAt: new Date().toISOString() }
+        ? {
+          ...row,
+          requestEventName: makeRequestEventName(row.fromDate, row.timeZone, row.licensePlate || row.assetName, row.cameraSerial),
+          status: "PLANNED",
+          failureReason: "",
+          lastError: "",
+          updatedAt: new Date().toISOString(),
+        }
         : row);
       saveHistory(rows);
     } else {
       scopeKeys = new Set(rows
         .filter((row) => row.cameraSerial === camera.cameraSerial && (ACTIVE.has(row.status) || row.status === "PLANNED"))
         .map((row) => row.key));
+      rows = rows.map((row) => row.cameraSerial === camera.cameraSerial && row.status === "PLANNED" && !row.requestId
+        ? {
+          ...row,
+          requestEventName: makeRequestEventName(row.fromDate, row.timeZone, row.licensePlate || row.assetName, row.cameraSerial),
+          updatedAt: new Date().toISOString(),
+        }
+        : row);
+      saveHistory(rows);
     }
     if (!rows.some((row) => row.cameraSerial === camera.cameraSerial && (ACTIVE.has(row.status) || row.status === "PLANNED"))) {
       const previousFailure = rows.find((row) => scopeKeys.has(row.key) && ["FAIL", "EXPIRED", "REJECTED", "ERROR"].includes(row.status));
@@ -348,7 +363,7 @@ export default function App({ api }) {
       return;
     }
     try {
-      const clips = makeClips(start, end, camera.timeZone, camera.cameraSerial, database);
+      const clips = makeClips(start, end, camera.timeZone, camera.cameraSerial, database, camera.licensePlate || camera.assetName || camera.cameraSerial);
       const exists = clips.some((clip) => history.some((row) => row.key === clip.key));
       if (!window.confirm(`Se solicitará vídeo para ${camera.assetName} (${camera.cameraSerial}). El intervalo se dividirá en clips de hasta 2 minutos. ¿Continuar?`)) return;
       if (exists) setNotice({ type: "info", text: "Los clips ya registrados no se duplicarán; se solicitarán solo los que falten." });
