@@ -1,26 +1,10 @@
 import { DateTime } from "luxon";
 
-const sessionCredentials = new WeakMap();
-
 export function call(api, method, params = {}) {
   if (!api || typeof api.call !== "function") {
     return Promise.reject(new Error("No está disponible la sesión API de MyGeotab."));
   }
-  const cachedCredentials = sessionCredentials.get(api);
-  const credentialsPromise = cachedCredentials || sessionInfo(api).then((session) => {
-    const credentials = {
-      database: String(session?.database || ""),
-      userName: String(session?.userName || ""),
-      sessionId: String(session?.sessionId || ""),
-    };
-    if (!credentials.database || !credentials.userName || !credentials.sessionId) {
-      throw new Error("La sesión de MyGeotab no contiene todas las credenciales necesarias para la API.");
-    }
-    sessionCredentials.set(api, Promise.resolve(credentials));
-    return credentials;
-  });
-  if (!cachedCredentials) sessionCredentials.set(api, credentialsPromise);
-  return credentialsPromise.then((credentials) => new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let settled = false;
     const timeout = window.setTimeout(() => fail(new Error(`MyGeotab no respondió a ${method} en 60 segundos.`)), 60000);
     const finish = (callback, value) => {
@@ -45,14 +29,14 @@ export function call(api, method, params = {}) {
       finish(reject, new Error(details.length ? `${base} (${details.join(", ")})` : base));
     };
     try {
-      // Mirror the local client: include the active session credentials in the
-      // JSON-RPC params instead of relying on implicit SDK injection.
-      const result = api.call(method, { ...params, credentials }, ok, fail);
+      // The Add-In receives an API object already bound to the signed-in user.
+      // Let the MyGeotab SDK attach and refresh its own credentials.
+      const result = api.call(method, params, ok, fail);
       if (result && typeof result.then === "function") result.then(ok, fail);
     } catch (error) {
       fail(error);
     }
-  }));
+  });
 }
 
 export async function sessionInfo(api) {
