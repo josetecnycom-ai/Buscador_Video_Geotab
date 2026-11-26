@@ -20,6 +20,10 @@ button, input { font: inherit; }
 .vr-heading { flex:1; }
 .vr-eyebrow { color:#71859a; font-size:10px; font-weight:750; letter-spacing:.11em; margin-bottom:4px; }
 .vr-heading h1 { margin:0; color:#1b3048; font-size:26px; line-height:1.25; font-weight:700; }
+.vr-title-row { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.vr-beta-badge { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:999px; background:#eaf3fb; color:#285987; font-size:13px; line-height:1; font-weight:500; }
+.vr-beta-badge svg { width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.vr-beta-badge .vr-beta-chevron { width:12px; height:12px; margin-left:1px; }
 .vr-heading p { margin:5px 0 0; color:var(--vr-muted); font-size:13px; }
 .vr-session { display:flex; align-items:center; gap:8px; color:#65788b; font-size:12px; font-weight:650; }
 .vr-session.is-connected { color:#306747; }

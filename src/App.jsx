@@ -425,7 +425,14 @@ export default function App({ api }) {
         <div className="vr-brand-mark" aria-hidden="true">▶</div>
         <div className="vr-heading">
           <div className="vr-eyebrow">MYGEOTAB · GESTIÓN DE VÍDEO</div>
-          <h1>Solicitud de vídeo</h1>
+          <div className="vr-title-row">
+            <h1>Solicitud de vídeo</h1>
+            <span className="vr-beta-badge" title="Versión beta" aria-label="Versión beta">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 1.75h4M7 1.75v4.1L3.5 12a1.45 1.45 0 0 0 1.25 2.2h6.5A1.45 1.45 0 0 0 12.5 12L9 5.85v-4.1M5.1 9.25h5.8" /></svg>
+              <span>Beta</span>
+              <svg className="vr-beta-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+            </span>
+          </div>
           <p>Solicita grabaciones directamente a la cámara y consúltalas después en MyGeotab.</p>
         </div>
         <div className={`vr-session ${database ? "is-connected" : "is-connecting"}`}><span className="vr-dot" />{database ? "Conectado" : "Conectando…"}<span className="vr-database">{database || "Cargando base…"}</span></div>
